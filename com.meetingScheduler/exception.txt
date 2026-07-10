@@ -1,0 +1,40 @@
+How to make exceptions class?
+
+Method 1
+├── exceptions/ 
+│ ├── RoomNotAvailableException.java 
+│ └── UserNotAvailableException.java
+
+public class RoomNotAvailableException extends RuntimeException {
+    public RoomNotAvailableException(String roomId) {
+        super("Room " + roomId + " is not available for the requested slot");
+    }
+}
+
+public class UserNotAvailableException extends RuntimeException {
+    public UserNotAvailableException(String userName) {
+        super(userName + " is not available for the requested slot");
+    }
+}
+
+Pros
+Good for LLD interview - Good code readability
+
+
+
+
+exceptions/
+📄
+MeetingSchedulerException.java
+base
+📄
+RoomNotAvailableException.java
+specific
+📄
+UserNotAvailableException.java
+specific
+📄
+MeetingNotFoundException.java
+specific
+
+ADD feature specific exception to feature package

@@ -1,0 +1,32 @@
+public enum Day { MONDAY, TUESDAY }
+
+Pros
+
+Type safety
+Readable
+-------------------------------------------------------------------------------------
+Using public static inside a normal class INSTEAD of ENUM
+
+Cons
+
+public class Day {
+    public static final int MONDAY = 0;
+    public static final int TUESDAY = 1;
+}
+
+And another class uses it:
+javaif (today == Day.TUESDAY) { ... }
+
+Because Day.TUESDAY is a compile-time constant, the compiler inlines the literal value 1 directly into the second class's bytecode. It no longer says "TUESDAY" — it literally says 1.
+
+Now you insert a new day at the front:
+public class Day {
+    public static final int SUNDAY  = 0;   // new
+    public static final int MONDAY  = 1;
+    public static final int TUESDAY = 2;    // value changed from 1 to 2
+}
+If you recompile Day but don't recompile the other class, 
+that class still has the old inlined 1 baked in.
+
+Why enums don't have this problem
+Enum constants are object references, not inlined literals. When another class refers to Day.TUESDAY, it holds a reference resolved at runtime, not a copied-in number. Reordering or inserting constants doesn't bake stale values into the calling class — the reference always points to the right object.
