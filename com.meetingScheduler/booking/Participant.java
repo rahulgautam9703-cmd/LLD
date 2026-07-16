@@ -1,6 +1,8 @@
 package booking;
 
 import notification.CommunicationPreference;
+import notification.Notification;
+import notification.NotificationFactory;
 import user.User;
 
 import java.util.HashSet;
@@ -46,14 +48,35 @@ Also Notifier  */
 
     @Override
     public void notifyBooking(BookingEvent event) {
-        System.out.println("Participant " + user.getName() + " notified: " + event);
+        for(CommunicationPreference c : communicationPreference)
+        {
+            Notification n = NotificationFactory.create(c);
+
+        }
     }
 
 
+/*
+* Participant should NOT do this
+public void update(BookingEvent e) {
+    for (Channel c : channels) {
+        Notification msg = new Notification(       // render + address (a builder would do this in prod)
+                c == Channel.EMAIL ? user.getEmail() : user.getPhone(),
+                e.title + " " + e.type,
+                "On " + e.dateTime + " at " + e.location);
+        Notifier notifier = NotifierFactory.create(c);   // pick transport
+        notifier.send(msg);                              // dumb delivery
+    }
+}
+Because
+* 1. as notifications increases or channels increases Participant class will have to change itself.
+* 2. Participant class should not decide what to send as message into the notification
+*
+* So in general notifyBooking() is doing three jobs — pick recipient, render content, deliver — when its only real job is orchestrate.
+*/
 
 
-
-
+//Participant is wrapper class around USER which is an observer
 
 
 
@@ -80,3 +103,23 @@ Also Notifier  */
 }
 
 /*Import both SET and HASHSET*/
+/*
+* The two options
+A. Current — Participant has-a User object
+•
+✅ notifyBooking needs email/phone immediately to send notifications — it has them directly, no lookup.
+•
+✅ User is immutable (final fields), so holding the reference can't go stale.
+•
+✅ No dependency on a UserService buried in the notification path.
+•
+❌ No central place that owns User lifecycle / uniqueness; main is the de-facto registry.
+B. UserService owns users, Participant stores userId
+•
+✅ Single source of truth for users; register once, reuse across roles (participant, organizer, etc.) — matches your own User.java comment ("User can be participant, author, scrum master").
+•
+✅ Users outlive any one booking.
+•
+❌ To send a notification, Participant (or the notifier) must now hold a UserService and resolve userId → User every time — pushes a service dependency deep into the observer, more indirection.
+•
+❌ Overkill if users never change and aren't shared.*/
