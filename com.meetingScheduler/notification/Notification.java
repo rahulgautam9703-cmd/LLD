@@ -4,23 +4,35 @@ import booking.BookingEvent;
 import user.User;
 
 public interface Notification {
-    //void notify(); //Each Object has notify() method for inter thread communication so cant use this method name
-    NotificationPayload build(BookingEvent e, User u);
-    void sendNotification(NotificationPayload p);
+    //void notify(); //Reserved - Each Object has notify() method for inter thread communication.
+
+    // COMBINED build + send: one method both renders the message AND delivers it.
+    // Input = the domain objects (event + user), because building needs them to render
+    // content and resolve the recipient (email vs phone).
+    //
+    // PROS: simplest interface; one call from the observer; can't send an unbuilt/mismatched payload.
+    // CONS: build and send become ONE responsibility ->
+    //        - can't unit-test rendering without actually delivering,
+    //        - can't retry send without re-building,
+    //        - transport is coupled to the domain (send knows BookingEvent/User).
+    //
+    // FUTURE DECOUPLE (production-grade) — split back into two roles:
+    //     NotificationPayload build(BookingEvent e, User u); // channel-aware rendering, testable
+    //     void send(NotificationPayload p);                  // dumb transport, domain-agnostic
+    // Then send() takes a self-contained payload (resolved recipient + subject + body), not the domain.
+    void send(BookingEvent e, User u);
 }
 
 /*
 What shall be passed inside sendNotification() ?
 
 Option 1
-(BookingEvent event, String contact) // EMAIL in strong or mobile number in string
-But in this case Observer class becomes responsible for providing different inputd number number, email etc inside itself to call different notifier
+(BookingEvent event, String contact) // EMAIL/Mobile number in String contact
+But in this case Observer class becomes responsible for providing different input (Email/Phone/App) etc inside itself to call different notifier
 
 Option 2
 send(BookingEvent event, ContactInfo contact);
-Here each notifier both formats the message and pulls the right field from ContactInfo (email vs phone). Simple,
-but it means formatting logic lives inside every notifier, and each notifier must know ContactInfo's shape.
-
+Here each notifier both formats the message and pulls the right field from ContactInfo (email vs phone).
 
 Option 3
 Production grade but over kill here

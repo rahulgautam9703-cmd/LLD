@@ -7,16 +7,23 @@ import user.User;
 
 import java.util.HashSet;
 import java.util.Set;
-
+/*
+Import both SET and HASHSET
+Participant is wrapper only for booking context as it is an Observer
+* Should it hold reference to User or UserId?
+* User: Already immutable so no staleness
+* Id: single source of truth. Every notification would force Participant to hold a UserService and resolve userId → User. Overkill when User never changes and is already immutable.
+* */
 public class Participant implements BookingObserver{
     private final User user;
     private final Set<CommunicationPreference> communicationPreference;
-    /*We didnt use boolean requireEmailNotification, boolean requireSMSNotification etc to prevent explosion*/
-/*Set is required for feature if someone wants to enquire about All communcation channel patticipant has subscribed to
+    /*We didnt use boolean requireEmailNotification, boolean requireSMSNotification etc to prevent explosion
+Set is required for feature if someone wants to enquire about All communcation channel patticipant has subscribed to
 Also Notifier  */
 
-
-    public Participant(User user) {
+    // Package-private: only the booking package (i.e. BookingService) creates participants,
+    // mirroring how only UserService creates users. main() can't do `new Participant(...)`.
+    Participant(User user) {
         //SAMPLE INPUT EMAIL VALIDATION CODE
         /*if (email == null || email.isBlank() || !isValidEmail(email)) {
             throw new IllegalArgumentException("Invalid email: " + email);
@@ -32,26 +39,24 @@ Also Notifier  */
     }*/
 
     /*Channel Subscription should be dynamic and should NOT be tied to the creation of participants, at any time can this be subscribed/unsubscribed*/
-
     public void subscribe (CommunicationPreference c)
     {
         this.communicationPreference.add(c);
     }
-
     public void unsubscribe (CommunicationPreference c)
     {
         this.communicationPreference.remove(c);
     }
-
-    /*Another thing worth thinking is what should be input to notifyBooking method of BookingObserver interface
-    * As of now we are */
 
     @Override
     public void notifyBooking(BookingEvent event) {
         for(CommunicationPreference c : communicationPreference)
         {
             Notification n = NotificationFactory.create(c);
-
+            if (n == null) {
+                continue; // channel not yet supported by the factory (e.g. APP_NOTIFICATION)
+            }
+            n.send(event, user); // combined build + send in one call
         }
     }
 
@@ -102,24 +107,3 @@ Because
     }
 }
 
-/*Import both SET and HASHSET*/
-/*
-* The two options
-A. Current — Participant has-a User object
-•
-✅ notifyBooking needs email/phone immediately to send notifications — it has them directly, no lookup.
-•
-✅ User is immutable (final fields), so holding the reference can't go stale.
-•
-✅ No dependency on a UserService buried in the notification path.
-•
-❌ No central place that owns User lifecycle / uniqueness; main is the de-facto registry.
-B. UserService owns users, Participant stores userId
-•
-✅ Single source of truth for users; register once, reuse across roles (participant, organizer, etc.) — matches your own User.java comment ("User can be participant, author, scrum master").
-•
-✅ Users outlive any one booking.
-•
-❌ To send a notification, Participant (or the notifier) must now hold a UserService and resolve userId → User every time — pushes a service dependency deep into the observer, more indirection.
-•
-❌ Overkill if users never change and aren't shared.*/

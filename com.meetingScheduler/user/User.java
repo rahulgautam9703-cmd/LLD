@@ -6,14 +6,14 @@ public class User {
     private final String email;
     private final String phone;
 
-    // Package-private: only UserService (same package) creates users, so it owns id assignment.
+    // Package-private: only UserService (same package) creates users, so client cant create a new User from main class.
     User(String id, String name, String email, String phone) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.phone = phone;
     }
-
+//-----------------------------------------------
     public String getId() {
         return id;
     }

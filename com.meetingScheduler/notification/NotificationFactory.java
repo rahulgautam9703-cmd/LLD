@@ -14,5 +14,4 @@ public class NotificationFactory {
     }
 }
 /*This class is basically linking of Channel to particular notification.
-Which should have been done in Participant class instead creation logic
-which nothing but based on Communication channel ids moved in a separate class called factory*/
+Moved from participant (Observer class to here)*/

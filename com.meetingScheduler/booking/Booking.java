@@ -5,11 +5,21 @@ import java.util.List;
 
 public class Booking {
 
+    // id is NOT final: it's assigned by BookingService after validation, not by the caller.
     private String id;
-    private List<String> participantsId; //VVIP partiipants not stored here
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private String roomId;
+
+    // Caller-supplied request data: final, set once via the constructor.
+    private final List<String> participantsId; //VVIP partiipants not stored here
+    private final LocalDateTime startTime;
+    private final LocalDateTime endTime;
+    private final String roomId;
+
+    public Booking(String roomId, List<String> participantsId, LocalDateTime startTime, LocalDateTime endTime) {
+        this.roomId = roomId;
+        this.participantsId = participantsId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
 //--------------------------------------------------------
     public String getId() {
         return id;
@@ -23,32 +33,16 @@ public class Booking {
         return participantsId;
     }
 
-    public void setParticipantsId(List<String> participantsId) {
-        this.participantsId = participantsId;
-    }
-
     public LocalDateTime getStartTime() {
         return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
     }
 
     public LocalDateTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
     public String getRoomId() {
         return roomId;
-    }
-
-    public void setRoomId(String roomId) {
-        this.roomId = roomId;
     }
 }
 

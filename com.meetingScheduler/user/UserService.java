@@ -6,24 +6,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-// In-memory user store (Repository pattern). Source of truth for User lifecycle AND identity.
-// Keyed by the surrogate id -> O(1) lookup, and id is immutable so it's a safe key (email isn't).
 public class UserService {
 
-    private final Map<String, User> users = new HashMap<>();
-    private final AtomicInteger seq = new AtomicInteger(0); // atomic id generator; use UUID in production
+    /*final here freezes the reference, not the contents. You can still users.put(...) / emailToId.remove(...) / seq.incrementAndGet() all day — final only stops the variable from being reassigned to a different object.*/
+    private final Map<String, User> users = new HashMap<>();        // id  -> User (primary store)
+    private final Map<String, String> emailToId = new HashMap<>();   // email -> id (unique-constraint + lookup index) for quick lookup findByEmail
+    private final AtomicInteger seq = new AtomicInteger(0); //private int seq = 0 atomic id generator; use UUID in production
 
-    // Service owns id generation: caller passes data, gets back a User with an assigned id.
-    public User register(String name, String email, String phone) {
-        // email is still a business-unique field even though it's not the key
-        boolean emailTaken = users.values().stream().anyMatch(u -> u.getEmail().equals(email));
-        if (emailTaken) {
+    /*What should we return from register method (User or User ID)
+    * Id: slow to query
+    * User: Already immutable so safe, Light
+    * */
+    public String register(String name, String email, String phone) {
+        if (emailToId.containsKey(email)) {   // O(1) uniqueness check via index (was O(n) stream scan)
             throw new AppException("User already registered: " + email, "USER_ALREADY_EXISTS");
         }
         String id = "U" + seq.incrementAndGet();
         User user = new User(id, name, email, phone);
         users.put(id, user);
-        return user;
+        emailToId.put(email, id);
+        return id;
     }
 
     public User findById(String id) {
@@ -33,9 +35,31 @@ public class UserService {
         }
         return user;
     }
+/*   While updating email id email-> id map might break
+     User is immutable, so "update" = build a replacement with the same id + new email,
+     then keep BOTH (email to map and useer id) maps in sync: move the emailToId entry off the old email onto the new one.*/
+    public User updateEmail(String id, String newEmail) {
+        User existing = findById(id);                 // throws UserNotFoundException if id is unknown
+
+        if (existing.getEmail().equals(newEmail)) {   // no-op: nothing to change
+            return existing;
+        }
+
+        // Reject only if the new email belongs to a DIFFERENT user (keeps email unique).
+        String ownerOfNewEmail = emailToId.get(newEmail);
+        if (ownerOfNewEmail != null && !ownerOfNewEmail.equals(id)) {
+            throw new AppException("Email already in use: " + newEmail, "USER_ALREADY_EXISTS");
+        }
+
+        User updated = new User(id, existing.getName(), newEmail, existing.getPhone());
+        users.put(id, updated);                       // 1. Replace same emailId
+        emailToId.remove(existing.getEmail());        // 2a. drop the stale index entry...
+        emailToId.put(newEmail, id);                  // 2b. ...and add the new one
+        return updated;
+    }
 }
 
-/*User service is reponsible for ID generation not Client
+/*User service is responsible for ID generation not Client
 * User is immutable
 * Production would use UUID.randomUUID() or a DB sequence
 * int seq = 0; can cause race condition can result in same id in multi threaded env
@@ -52,4 +76,5 @@ private final AtomicInteger seq = new AtomicInteger(0);
 ...
 String id = "U" + seq.incrementAndGet();   // A gets U6, B gets U7 — guaranteed unique
 So: int ++ = 3 racy steps → duplicate ids; AtomicInteger = 1 atomic step → always unique. (UUID.randomUUID() sidesteps the shared counter entirely — no coordination needed.)
-* */
+
+* EMAIL id for uniqueness not primary key. To avoid different users with same EMAIL id. */
