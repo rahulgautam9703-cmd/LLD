@@ -8,8 +8,10 @@ import user.User;
 import java.util.HashSet;
 import java.util.Set;
 /*
+A Participant = a User who has OPTED IN to booking notifications (i.e. an observer of BookingEvents).
+An attendee/User who doesn't need any notification is simply never a Participant, and
+that's fine.
 Import both SET and HASHSET
-Participant is wrapper only for booking context as it is an Observer
 * Should it hold reference to User or UserId?
 * User: Already immutable so no staleness
 * Id: single source of truth. Every notification would force Participant to hold a UserService and resolve userId → User. Overkill when User never changes and is already immutable.
@@ -23,16 +25,13 @@ Also Notifier  */
 
     // Package-private: only the booking package (i.e. BookingService) creates participants,
     // mirroring how only UserService creates users. main() can't do `new Participant(...)`.
-    Participant(User user) {
-        //SAMPLE INPUT EMAIL VALIDATION CODE
-        /*if (email == null || email.isBlank() || !isValidEmail(email)) {
-            throw new IllegalArgumentException("Invalid email: " + email);
-        }*/
+    // The subscriber states WHICH channels they want at subscribe time (EMAIL/SMS/...). If none are
+    // given we default to EMAIL. Preferences stay dynamic afterwards via subscribe()/unsubscribe().
+    Participant(User user, Set<CommunicationPreference> preferences) {
         this.user = user;
-        //this.communicationPreference = new HashSet<>(CommunicationPreference.EMAIL); //No such constructor present
-        this.communicationPreference = new HashSet<>();
-        this.communicationPreference.add(CommunicationPreference.EMAIL);
-
+        this.communicationPreference = (preferences == null || preferences.isEmpty())
+                ? new HashSet<>(Set.of(CommunicationPreference.EMAIL)) // sensible default
+                : new HashSet<>(preferences);                          // defensive copy
     }
    /* private boolean isValidEmail(String email) {
         return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");

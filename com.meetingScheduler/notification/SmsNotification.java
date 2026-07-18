@@ -8,13 +8,13 @@ public class SmsNotification implements Notification {
     // build + send combined into one method (see Notification interface for pros/cons + how to split later).
     @Override
     public void send(BookingEvent e, User u) {
-        // --- build step (render + resolve recipient) — would become a separate build() when decoupled ---
+        // --- build step
         NotificationPayload payload = new NotificationPayload(
                 u.getPhone(),                                  // phone is the recipient for this channel
-                null,                                          // SMS has no subject
-                "Booking " + e.getBookingId() + " at " + e.getTime()); // body
+                null,
+                "Booking " + e.getBookingId() + " in room " + e.getRoomId() + " at " + e.getTime());
 
-        // --- send step (deliver) — reads only from the payload; would take it as its only input when decoupled ---
+        // --- send step
         System.out.println("SMS sent to " + payload.getRecipient() + " | " + payload.getBody());
     }
 }

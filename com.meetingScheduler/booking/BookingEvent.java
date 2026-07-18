@@ -1,44 +1,44 @@
 package booking;
 
 import java.time.LocalDateTime;
+/*
+* Pros (why a dedicated Bookingevent class)
+1. Only for i/p to BookingObservers, not passing the "Booking class as i/p - overexposing". Decouple Observer and Booking class
+2. Stable i/p parameter inside observer notifyBooking(BookingEvent), instead of Passing primitives (notify(String title, LocalDateTime t, String loc)) →  new field breaks every observer's signature.
+3. Testable. Trivial to construct a BookingEvent to unit-test an observer.
 
-public class BookingEvent {
-    private String bookingId;
-    private LocalDateTime time; //NOTICE
-    private EventType eventType;
+Cons
+1. Extra class + mapping. Field duplication.
+ */
 
-    /*Good to have: Organisaer, Location, List of all the participants
-    * What should not go inside this What should NOT go in
-The live Booking entity. Tempting, but it over-exposes — the observer gets the whole aggregate including its observer list, internal state, and mutation methods. Pass a snapshot of the needed fields instead*/
+// Immutable read-only snapshot
+public final class BookingEvent {
+    private final String bookingId;
+    private final String roomId;
+    private final LocalDateTime time; //NOTICE
+    private final EventType eventType;
+    //Good to have (later): Organiser, list of participants
 
-
-    public BookingEvent(String bookingId, LocalDateTime time, EventType eventType) {
+    public BookingEvent(String bookingId, String roomId, LocalDateTime time, EventType eventType) {
         this.bookingId = bookingId;
+        this.roomId = roomId;
         this.time = time;
         this.eventType = eventType;
     }
-
+//-- no setters because the fields are final ------------------
     public String getBookingId() {
         return bookingId;
     }
 
-    public void setBookingId(String bookingId) {
-        this.bookingId = bookingId;
+    public String getRoomId() {
+        return roomId;
     }
 
     public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
     public EventType getEventType() {
         return eventType;
-    }
-
-    public void setEventType(EventType eventType) {
-        this.eventType = eventType;
     }
 }

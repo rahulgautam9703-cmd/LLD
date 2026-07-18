@@ -13,5 +13,5 @@ public class NotificationFactory {
         return type;
     }
 }
-/*This class is basically linking of Channel to particular notification.
-Moved from participant (Observer class to here)*/
+/*This class is basically linking of Channel to particular notification creation.
+Moved from participant (Observer class)  to here*/

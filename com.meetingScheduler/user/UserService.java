@@ -35,6 +35,12 @@ public class UserService {
         }
         return user;
     }
+
+    // Assertion form of findById: throws UserNotFoundException if the id isn't a real user; returns nothing.
+    // Reads clearer at call sites than calling findById and discarding the result.
+    public void requireExists(String id) {
+        findById(id);
+    }
 /*   While updating email id email-> id map might break
      User is immutable, so "update" = build a replacement with the same id + new email,
      then keep BOTH (email to map and useer id) maps in sync: move the emailToId entry off the old email onto the new one.*/
